@@ -19,10 +19,10 @@ All configurations concerning data, model, training, visualization etc. can be m
 
 The following steps guide you from your dataset to your evaluation:
 
-* Set your _dataset_dir_ in _config.py_. This is the directory where the subdirectories are the classes you want to detect are located. It should be configured whether the datasets contains 3D scans (set _mvt3D_ in _config.py_). If 3D data is present (_mvt3D=True_), the data structure from [MVTec 3D-AD](https://www.mvtec.com/company/research/datasets/mvtec-3d-ad) is assumed. It can be chosen which data domain should be used for detection (set mode in _config.py_). If the dataset does not contain 3D data (_mvt3D=False_), the data structure from the [MVTec AD dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad) is assumed. Both dataset structures are described in the documentation of _load_img_datasets_ in _utils.py_.
+* Set your _dataset_dir_ in _config.py_. This is the directory where the subdirectories are the classes you want to detect are located. It should be configured whether the datasets contains 3D scans (set _use_3D_dataset_ in _config.py_). If 3D data is present (_use_3D_dataset=True_), the data structure from [MVTec 3D-AD](https://www.mvtec.com/company/research/datasets/mvtec-3d-ad) is assumed. It can be chosen which data domain should be used for detection (set mode in _config.py_). If the dataset does not contain 3D data (_use_3D_dataset=False_), the data structure from the [MVTec AD dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad) is assumed. Both dataset structures are described in the documentation of _load_img_datasets_ in _utils.py_.
 * _preprocessing.py_: It is recommended to pre-extract the features beforehand to save training time. This script also preprocesses 3D scans. Alternatively, the raw images are used in training when setting _pre_extracted=False_ in _config.py_.
-* _train_teacher.py_: Trains the teacher and saves the model to models/...
-* _train_student.py_: Trains the student and saves the model to models/...
+* _train_teacher.py_: Trains the teacher and saves the model to _models/..._
+* _train_student.py_: Trains the student and saves the model to _models/..._
 * _eval.py_: Evaluates the student-teacher-network (image-level results and localization/segmentation). Additionally, it creates ROC curves, anomaly score histograms and localization images.
 
 Note: Due to a bug in the original implementation for the RGB+3D setting the performance on MVTec 3D-AD is about 2% better than originally reported.
