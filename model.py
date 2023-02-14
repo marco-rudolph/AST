@@ -76,7 +76,7 @@ def positionalencoding2d(D, H, W):
     P[1:D:2, :, :] = torch.cos(pos_w * div_term).transpose(0, 1).unsqueeze(1).repeat(1, H, 1)
     P[D::2, :, :] = torch.sin(pos_h * div_term).transpose(0, 1).unsqueeze(2).repeat(1, 1, W)
     P[D + 1::2, :, :] = torch.cos(pos_h * div_term).transpose(0, 1).unsqueeze(2).repeat(1, 1, W)
-    return P.cuda()[None]
+    return P.to(c.device)[None]
 
 
 class Model(nn.Module):
