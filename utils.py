@@ -38,7 +38,7 @@ def dilation(map, size):
     kernel = np.ones([size, size])
     for i in range(len(map)):
         map[i, 0] = binary_dilation(map[i, 0], kernel)
-    map = torch.FloatTensor(map).cuda()
+    map = torch.FloatTensor(map).to(c.device)
     return map
 
 
@@ -195,7 +195,7 @@ def make_dataloaders(trainset, testset, shuffle_train=True, drop_last=True):
 
 def downsampling(x, size, to_tensor=False, bin=True):
     if to_tensor:
-        x = torch.FloatTensor(x).cuda()
+        x = torch.FloatTensor(x).to(c.device)
     down = F.interpolate(x, size=size, mode='bilinear', align_corners=False)
     if bin:
         down[down > 0] = 1
