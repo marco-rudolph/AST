@@ -11,8 +11,6 @@ from utils import *
 
 
 def localize(image, depth, st_pixel, labels, fg, mask, batch_ind):
-    up = torch.nn.Upsample(size=None, scale_factor=c.depth_len // c.map_len, mode='bicubic', align_corners=False)
-    st_pixel = up(st_pixel[:, None])[:, 0]
     for i in range(fg.shape[0]):
         if labels[i] > 0:
             fg_i = t2np(fg[i, 0])
@@ -29,9 +27,15 @@ def evaluate(test_loader):
     teacher = Model()
     teacher = load_weights(teacher, 'teacher')
 
+    up = torch.nn.Upsample(size=None, scale_factor=c.depth_len // c.map_len, mode='bicubic',
+                           align_corners=False)
+
     test_labels = list()
     mean_st = list()
     max_st = list()
+
+    score_maps = list()
+    gt_masks = list()
 
     with torch.no_grad():
         for i, data in enumerate(tqdm(test_loader, disable=c.hide_tqdm_bar)):
@@ -50,10 +54,13 @@ def evaluate(test_loader):
 
             if c.eval_mask:
                 st_pixel = st_pixel * fg_down[:, 0]
+            st_pixel = up(st_pixel[:, None])[:, 0]
 
             mean_st.append(t2np(st_loss))
             max_st.append(np.max(t2np(st_pixel), axis=(1, 2)))
             test_labels.append(labels)
+            gt_masks.append(t2np(mask).flatten())
+            score_maps.append(t2np(st_pixel).flatten())
 
             if c.localize:
                 localize(image, depth, st_pixel, labels, fg, mask, i)
@@ -61,36 +68,46 @@ def evaluate(test_loader):
     mean_st = np.concatenate(mean_st)
     max_st = np.concatenate(max_st)
 
+    gt_masks = np.concatenate(gt_masks)
+    score_maps = np.concatenate(score_maps)
+
     test_labels = np.concatenate(test_labels)
     is_anomaly = np.array([0 if l == 0 else 1 for l in test_labels])
 
     mean_st_auc = roc_auc_score(is_anomaly, mean_st)
     max_st_auc = roc_auc_score(is_anomaly, max_st)
+    pixel_auc = roc_auc_score(gt_masks, score_maps)
 
-    print('AUROC %\tmean over maps: {:.2f} \t max over maps: {:.2f}'.format(mean_st_auc * 100, max_st_auc * 100))
+    print('AUROC %\tmean over maps: {:.2f} \t max over maps: {:.2f} \t pixel: {:.2f}'.format(mean_st_auc * 100,
+                                                                                             max_st_auc * 100,
+                                                                                             pixel_auc * 100))
 
     viz_roc(mean_st, is_anomaly, name='mean')
     viz_roc(max_st, is_anomaly, name='max')
+    viz_roc(score_maps, gt_masks, name='pixel')
 
     compare_histogram(mean_st, is_anomaly, log=True, name='mean')
     compare_histogram(max_st, is_anomaly, log=True, name='max')
 
-    return mean_st_auc, max_st_auc
+    return mean_st_auc, max_st_auc, pixel_auc
 
 
 if __name__ == "__main__":
-    all_classes = [d for d in os.listdir(c.dataset_dir) if os.path.isdir(join(c.dataset_dir, d))]
+    all_classes = ["foam"]# [d for d in os.listdir(c.dataset_dir) if os.path.isdir(join(c.dataset_dir, d))]
     max_scores = list()
     mean_scores = list()
+    pixel_scores = list()
     for i_c, cn in enumerate(all_classes):
         c.class_name = cn
         print('\nEvaluate class ' + c.class_name)
         train_set, test_set = load_datasets(get_mask=True)
         _, test_loader = make_dataloaders(train_set, test_set)
-        mean_sc, max_sc = evaluate(test_loader)
+        mean_sc, max_sc, pixel_sc = evaluate(test_loader)
         mean_scores.append(mean_sc)
         max_scores.append(max_sc)
+        pixel_scores.append(pixel_sc)
     mean_scores = np.mean(mean_scores) * 100
     max_scores = np.mean(max_scores) * 100
-    print('\nmean AUROC % over all classes\n\tmean over maps: {:.2f} \t max over maps: {:.2f}'.format(mean_scores,
-                                                                                                      max_scores))
+    pixel_scores = np.mean(pixel_scores) * 100
+    print('\nmean AUROC % over all classes\n\tmean over maps: {:.2f} \t max over maps: {:.2f} \t pixel: {:.2f}'.format(mean_scores,
+                                                                                                      max_scores, pixel_scores))
