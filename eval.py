@@ -93,7 +93,7 @@ def evaluate(test_loader):
 
 
 if __name__ == "__main__":
-    all_classes = ["foam"]# [d for d in os.listdir(c.dataset_dir) if os.path.isdir(join(c.dataset_dir, d))]
+    all_classes = [d for d in os.listdir(c.dataset_dir) if os.path.isdir(join(c.dataset_dir, d))]
     max_scores = list()
     mean_scores = list()
     pixel_scores = list()
